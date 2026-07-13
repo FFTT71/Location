@@ -536,6 +536,16 @@
                     showSuccess();
                     this.reset();
                     editingId = null;
+                    
+                    // Buttons zurücksetzen
+                    submitBtn.textContent = 'Enregistrer la réservation';
+                    submitBtn.style.background = '#667eea';
+                    
+                    const resetBtn = document.querySelector('.btn-reset');
+                    resetBtn.textContent = 'Réinitialiser';
+                    resetBtn.style.background = '#e0e0e0';
+                    resetBtn.style.color = '#555';
+                    
                     await loadBookings();
                 } else {
                     showError('Erreur lors de l\'enregistrement');
@@ -544,8 +554,24 @@
                 showError('Erreur: ' + error.message);
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Enregistrer la réservation';
+                submitBtn.textContent = editingId ? 'Mettre à jour la réservation' : 'Enregistrer la réservation';
             }
+        });
+        
+        // Reset-Button Handler
+        document.getElementById('bookingForm').addEventListener('reset', function() {
+            editingId = null;
+            
+            // Submit-Button zurücksetzen
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.textContent = 'Enregistrer la réservation';
+            submitBtn.style.background = '#667eea';
+            
+            // Reset-Button zurücksetzen
+            const resetBtn = document.querySelector('.btn-reset');
+            resetBtn.textContent = 'Réinitialiser';
+            resetBtn.style.background = '#e0e0e0';
+            resetBtn.style.color = '#555';
         });
         
         function showSuccess() {
@@ -565,81 +591,4 @@
             const list = document.getElementById('bookingsList');
             
             if (!bookings || bookings.length === 0) {
-                list.innerHTML = '<p style="color: #999; text-align: center; padding: 40px;">Aucune réservation</p>';
-                return;
-            }
-            
-            // Sortieren nach Ankunftsdatum
-            bookings.sort((a, b) => new Date(a.arrivalDate) - new Date(b.arrivalDate));
-            
-            list.innerHTML = bookings.map(booking => `
-                <div class="booking-item">
-                    <div class="booking-info">
-                        ${booking.guestName ? `<p><strong>Client :</strong> ${booking.guestName}</p>` : ''}
-                        <p><strong>Arrivée :</strong> ${formatDate(booking.arrivalDate)}</p>
-                        <p><strong>Départ :</strong> ${formatDate(booking.departureDate)}</p>
-                        <p><strong>Personnes :</strong> ${booking.numPersons} | <strong>Nuits :</strong> ${booking.numNights}</p>
-                        ${booking.notes ? `<p><strong>Notes :</strong> ${booking.notes}</p>` : ''}
-                    </div>
-                    <div class="booking-actions">
-                        <button class="btn-edit" onclick='editBooking(${JSON.stringify(booking)})'>Modifier</button>
-                        <button class="btn-delete" onclick="deleteBooking('${booking.id}')">Supprimer</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-        
-        function editBooking(booking) {
-            document.getElementById('guestName').value = booking.guestName || '';
-            document.getElementById('arrivalDate').value = booking.arrivalDate;
-            document.getElementById('numPersons').value = booking.numPersons;
-            document.getElementById('numNights').value = booking.numNights;
-            document.getElementById('notes').value = booking.notes || '';
-            editingId = booking.id;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-        
-        async function deleteBooking(id) {
-            if (!confirm('Supprimer cette réservation ?')) return;
-            
-            try {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'delete', id: id })
-                });
-                await loadBookings();
-            } catch (error) {
-                showError('Erreur lors de la suppression');
-            }
-        }
-        
-        function updateStats(bookings) {
-            const today = new Date().toISOString().split('T')[0];
-            const nextWeek = new Date();
-            nextWeek.setDate(nextWeek.getDate() + 7);
-            const nextWeekStr = nextWeek.toISOString().split('T')[0];
-            
-            let total = 0, todayCount = 0, weekCount = 0;
-            
-            bookings.forEach(booking => {
-                total++;
-                if (booking.arrivalDate === today) todayCount++;
-                if (booking.arrivalDate >= today && booking.arrivalDate <= nextWeekStr) weekCount++;
-            });
-            
-            document.getElementById('totalBookings').textContent = total;
-            document.getElementById('todayBookings').textContent = todayCount;
-            document.getElementById('upcomingBookings').textContent = weekCount;
-        }
-        
-        function formatDate(dateString) {
-            return new Date(dateString).toLocaleDateString('fr-FR', {
-                weekday: 'short',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            });
-        }
-    </script>
-</body>
-</html>
+                list.

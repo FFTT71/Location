@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion de l'Appartement de Vacances</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .config-box {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .config-box h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .config-box input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .config-box button {
+            background: #ffc107;
+            color: #333;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .info-box h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .link-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        #cleanerLinkInput {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            background: #f5f5f5;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+        
+        input[type="date"],
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-submit {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-submit:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-submit:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .btn-reset {
+            background: #e0e0e0;
+            color: #555;
+        }
+        
+        .btn-reset:hover {
+            background: #d0d0d0;
+        }
+        
+        .bookings-list {
+            margin-top: 40px;
+        }
+        
+        .bookings-list h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .booking-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .booking-info {
+            flex: 1;
+        }
+        
+        .booking-info p {
+            margin: 5px 0;
+            color: #555;
+        }
+        
+        .booking-info strong {
+            color: #333;
+        }
+        
+        .booking-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-delete {
+            background: #ff4757;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .btn-delete:hover {
+            background: #ee5a6f;
+        }
+        
+        .btn-edit {
+            background: #ffa502;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .btn-edit:hover {
+            background: #ff7f00;
+        }
+        
+        .success-message {
+            background: #4caf50;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .error-message {
+            background: #ff4757;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .copy-btn {
+            background: #2196f3;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .copy-btn:hover {
+            background: #1976d2;
+        }
+        
+        .share-btn {
+            background: #25D366;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .share-btn:hover {
+            background: #128C7E;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏠 Gestion de l'Appartement de Vacances</h1>
+        <p class="subtitle">Espace Administrateur</p>
+        
+        <div class="config-box" id="configBox">
+            <h3>⚙️ Configuration Google Sheets</h3>
+            <p style="color: #856404; margin-bottom: 10px; font-size: 14px;">
+                Collez l'URL de votre Web App Google Sheets :
+            </p>
+            <input type="text" id="apiUrl" placeholder="https://script.google.com/macros/s/XXXXX/exec">
+            <button onclick="saveConfig()">Enregistrer la configuration</button>
+        </div>
+        
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage">✓ Réservation enregistrée avec succès !</div>
+        
+        <div class="info-box" style="display: none;" id="linkBox">
+            <h3>📱 Lien pour le personnel de ménage :</h3>
+            <div class="link-container">
+                <input type="text" id="cleanerLinkInput" readonly>
+                <button class="copy-btn" onclick="copyLink()">Copier</button>
+            </div>
+            <div class="link-container">
+                <a id="whatsappBtn" class="share-btn" target="_blank">
+                    📱 Envoyer par WhatsApp
+                </a>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalBookings">0</div>
+                <div class="stat-label">Réservations actives</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="upcomingBookings">0</div>
+                <div class="stat-label">Semaine prochaine</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="todayBookings">0</div>
+                <div class="stat-label">Aujourd'hui</div>
+            </div>
+        </div>
+        
+        <form id="bookingForm">
+            <div class="form-group">
+                <label for="guestName">Nom du client (optionnel) :</label>
+                <input type="text" id="guestName" placeholder="ex. Famille Dupont">
+            </div>
+            
+            <div class="form-group">
+                <label for="arrivalDate">Date d'arrivée :</label>
+                <input type="date" id="arrivalDate" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="numPersons">Nombre de personnes :</label>
+                <input type="number" id="numPersons" min="1" max="10" value="2" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="numNights">Nombre de nuits :</label>
+                <input type="number" id="numNights" min="1" max="30" value="3" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="notes">Notes (optionnel) :</label>
+                <input type="text" id="notes" placeholder="ex. Allergies, demandes spéciales">
+            </div>
+            
+            <div class="button-group">
+                <button type="submit" class="btn-submit" id="submitBtn">Enregistrer la réservation</button>
+                <button type="reset" class="btn-reset">Réinitialiser</button>
+            </div>
+        </form>
+        
+        <div class="bookings-list">
+            <h2>Réservations actuelles</h2>
+            <div id="bookingsList">
+                <p style="color: #999; text-align: center; padding: 20px;">
+                    Configurez d'abord l'URL de Google Sheets ci-dessus
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let API_URL = localStorage.getItem('sheetsApiUrl') || '';
+        let editingId = null;
+        
+        // Initialisierung
+        window.addEventListener('DOMContentLoaded', function() {
+            if (API_URL) {
+                document.getElementById('apiUrl').value = API_URL;
+                document.getElementById('configBox').style.display = 'none';
+                document.getElementById('linkBox').style.display = 'block';
+                loadBookings();
+            }
+            
+            updateCleanerLink();
+            document.getElementById('arrivalDate').min = new Date().toISOString().split('T')[0];
+            
+            // Auto-Refresh alle 30 Sekunden
+            setInterval(() => {
+                if (API_URL) loadBookings();
+            }, 30000);
+        });
+        
+        function saveConfig() {
+            const url = document.getElementById('apiUrl').value.trim();
+            if (!url) {
+                showError('Veuillez entrer une URL valide');
+                return;
+            }
+            
+            API_URL = url;
+            localStorage.setItem('sheetsApiUrl', url);
+            document.getElementById('configBox').style.display = 'none';
+            document.getElementById('linkBox').style.display = 'block';
+            loadBookings();
+        }
+        
+        function updateCleanerLink() {
+            const currentUrl = window.location.href;
+            const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/') + 1);
+            const cleanerLink = baseUrl + 'cleaner.html';
+            
+            document.getElementById('cleanerLinkInput').value = cleanerLink;
+            
+            const message = encodeURIComponent(`Bonjour! Voici le lien pour consulter le planning: ${cleanerLink}`);
+            document.getElementById('whatsappBtn').href = `https://wa.me/?text=${message}`;
+        }
+        
+        function copyLink() {
+            const linkInput = document.getElementById('cleanerLinkInput');
+            linkInput.select();
+            navigator.clipboard.writeText(linkInput.value).then(() => {
+                const btn = event.target;
+                btn.textContent = '✓ Copié !';
+                btn.style.background = '#4caf50';
+                setTimeout(() => {
+                    btn.textContent = 'Copier';
+                    btn.style.background = '#2196f3';
+                }, 2000);
+            });
+        }
+        
+        async function loadBookings() {
+            if (!API_URL) return;
+            
+            try {
+                const response = await fetch(API_URL);
+                const bookings = await response.json();
+                displayBookings(bookings);
+                updateStats(bookings);
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError('Erreur de chargement des données');
+            }
+        }
+        
+        document.getElementById('bookingForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!API_URL) {
+                showError('Configurez d\'abord l\'URL Google Sheets');
+                return;
+            }
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Enregistrement...';
+            
+            const guestName = document.getElementById('guestName').value;
+            const arrivalDate = document.getElementById('arrivalDate').value;
+            const numPersons = parseInt(document.getElementById('numPersons').value);
+            const numNights = parseInt(document.getElementById('numNights').value);
+            const notes = document.getElementById('notes').value;
+            
+            const arrival = new Date(arrivalDate);
+            const departure = new Date(arrival);
+            departure.setDate(departure.getDate() + numNights);
+            
+            const bookingData = {
+                action: editingId ? 'update' : 'add',
+                id: editingId,
+                guestName,
+                arrivalDate,
+                departureDate: departure.toISOString().split('T')[0],
+                numPersons,
+                numNights,
+                notes
+            };
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(bookingData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccess();
+                    this.reset();
+                    editingId = null;
+                    await loadBookings();
+                } else {
+                    showError('Erreur lors de l\'enregistrement');
+                }
+            } catch (error) {
+                showError('Erreur: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Enregistrer la réservation';
+            }
+        });
+        
+        function showSuccess() {
+            const msg = document.getElementById('successMessage');
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 3000);
+        }
+        
+        function showError(message) {
+            const msg = document.getElementById('errorMessage');
+            msg.textContent = '✗ ' + message;
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 5000);
+        }
+        
+        function displayBookings(bookings) {
+            const list = document.getElementById('bookingsList');
+            
+            if (!bookings || bookings.length === 0) {
+                list.innerHTML = '<p style="color: #999; text-align: center; padding: 40px;">Aucune réservation</p>';
+                return;
+            }
+            
+            // Sortieren nach Ankunftsdatum
+            bookings.sort((a, b) => new Date(a.arrivalDate) - new Date(b.arrivalDate));
+            
+            list.innerHTML = bookings.map(booking => `
+                <div class="booking-item">
+                    <div class="booking-info">
+                        ${booking.guestName ? `<p><strong>Client :</strong> ${booking.guestName}</p>` : ''}
+                        <p><strong>Arrivée :</strong> ${formatDate(booking.arrivalDate)}</p>
+                        <p><strong>Départ :</strong> ${formatDate(booking.departureDate)}</p>
+                        <p><strong>Personnes :</strong> ${booking.numPersons} | <strong>Nuits :</strong> ${booking.numNights}</p>
+                        ${booking.notes ? `<p><strong>Notes :</strong> ${booking.notes}</p>` : ''}
+                    </div>
+                    <div class="booking-actions">
+                        <button class="btn-edit" onclick='editBooking(${JSON.stringify(booking)})'>Modifier</button>
+                        <button class="btn-delete" onclick="deleteBooking('${booking.id}')">Supprimer</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function editBooking(booking) {
+            document.getElementById('guestName').value = booking.guestName || '';
+            document.getElementById('arrivalDate').value = booking.arrivalDate;
+            document.getElementById('numPersons').value = booking.numPersons;
+            document.getElementById('numNights').value = booking.numNights;
+            document.getElementById('notes').value = booking.notes || '';
+            editingId = booking.id;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        async function deleteBooking(id) {
+            if (!confirm('Supprimer cette réservation ?')) return;
+            
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'delete', id: id })
+                });
+                await loadBookings();
+            } catch (error) {
+                showError('Erreur lors de la suppression');
+            }
+        }
+        
+        function updateStats(bookings) {
+            const today = new Date().toISOString().split('T')[0];
+            const nextWeek = new Date();
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            const nextWeekStr = nextWeek.toISOString().split('T')[0];
+            
+            let total = 0, todayCount = 0, weekCount = 0;
+            
+            bookings.forEach(booking => {
+                total++;
+                if (booking.arrivalDate === today) todayCount++;
+                if (booking.arrivalDate >= today && booking.arrivalDate <= nextWeekStr) weekCount++;
+            });
+            
+            document.getElementById('totalBookings').textContent = total;
+            document.getElementById('todayBookings').textContent = todayCount;
+            document.getElementById('upcomingBookings').textContent = weekCount;
+        }
+        
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('fr-FR', {
+                weekday: 'short',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        }
+    </script>
+</body>
+</html>

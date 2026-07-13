@@ -39,6 +39,39 @@
             margin-bottom: 30px;
         }
         
+        .config-box {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .config-box h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .config-box input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .config-box button {
+            background: #ffc107;
+            color: #333;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+        }
+        
         .refresh-info {
             background: #e3f2fd;
             padding: 12px;
@@ -231,6 +264,15 @@
             margin-bottom: 20px;
             text-align: center;
         }
+        
+        .success-message {
+            background: #4caf50;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -238,12 +280,21 @@
         <h1>🧹 Planning de Nettoyage</h1>
         <p class="subtitle">Appartement de Vacances</p>
         
-        <div class="refresh-info">
+        <div class="config-box" id="configBox" style="display: none;">
+            <h3>⚙️ Configuration</h3>
+            <p style="color: #856404; margin-bottom: 10px; font-size: 14px;">
+                Entrez l'URL de Google Sheets (demandez à l'administrateur) :
+            </p>
+            <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/XXXXX/exec">
+            <button onclick="saveApiUrl()">Enregistrer</button>
+        </div>
+        
+        <div class="refresh-info" id="refreshInfo" style="display: none;">
             <span class="pulse"></span>
             Mise à jour automatique toutes les 30 secondes
         </div>
         
-        <div class="stats-summary">
+        <div class="stats-summary" id="statsBox" style="display: none;">
             <div class="stat-item">
                 <div class="stat-number" id="statToday">0</div>
                 <div class="stat-label">Aujourd'hui</div>
@@ -258,37 +309,83 @@
             </div>
         </div>
         
-        <div class="filter-tabs">
+        <div class="filter-tabs" id="filterTabs" style="display: none;">
             <button class="filter-tab active" onclick="filterBookings('all')">Toutes</button>
             <button class="filter-tab" onclick="filterBookings('upcoming')">À venir</button>
             <button class="filter-tab" onclick="filterBookings('past')">Passées</button>
         </div>
         
         <div id="errorMessage" class="error-message" style="display: none;"></div>
+        <div id="successMessage" class="success-message" style="display: none;"></div>
         
         <div id="bookingsList">
-            <div class="loading">🔄 Chargement des réservations...</div>
+            <div class="loading">🔄 Initialisation...</div>
         </div>
         
-        <div class="last-update">
+        <div class="last-update" id="lastUpdateBox" style="display: none;">
             Dernière mise à jour : <span id="lastUpdate">--:--</span>
         </div>
     </div>
     
     <script>
-        // ⚠️ WICHTIG: Fügen Sie hier Ihre Google Sheets Web-App URL ein
-        const API_URL =  'https://script.google.com/macros/s/AKfycbyOlmgUwIkViXST6Je1sL7Uznur4ywnfiips1eMITBqDydvyHamHhTeUYX5yfmBFjps/exec';
-        
+        let API_URL = localStorage.getItem('cleanerApiUrl') || localStorage.getItem('sheetsApiUrl') || '';
         let currentFilter = 'all';
         let allBookings = [];
+        let autoRefreshInterval;
         
         // Beim Laden der Seite
         window.addEventListener('DOMContentLoaded', function() {
+            if (!API_URL) {
+                // Zeige Konfigurationsfeld
+                document.getElementById('configBox').style.display = 'block';
+                document.getElementById('bookingsList').innerHTML = `
+                    <div class="no-bookings">
+                        <div class="no-bookings-icon">⚙️</div>
+                        <h3>Configuration requise</h3>
+                        <p>Veuillez entrer l'URL de Google Sheets ci-dessus</p>
+                    </div>
+                `;
+            } else {
+                initializeApp();
+            }
+        });
+        
+        function saveApiUrl() {
+            const url = document.getElementById('apiUrlInput').value.trim();
+            
+            if (!url) {
+                showError('Veuillez entrer une URL valide');
+                return;
+            }
+            
+            if (!url.includes('script.google.com')) {
+                showError('L\'URL doit être une URL Google Apps Script');
+                return;
+            }
+            
+            API_URL = url;
+            localStorage.setItem('cleanerApiUrl', url);
+            
+            document.getElementById('configBox').style.display = 'none';
+            showSuccess('Configuration enregistrée !');
+            
+            setTimeout(() => {
+                initializeApp();
+            }, 1000);
+        }
+        
+        function initializeApp() {
+            document.getElementById('refreshInfo').style.display = 'block';
+            document.getElementById('statsBox').style.display = 'grid';
+            document.getElementById('filterTabs').style.display = 'flex';
+            document.getElementById('lastUpdateBox').style.display = 'block';
+            
             loadBookings();
             
             // Auto-Refresh alle 30 Sekunden
-            setInterval(loadBookings, 30000);
-        });
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            autoRefreshInterval = setInterval(loadBookings, 30000);
+        }
         
         async function loadBookings() {
             try {
@@ -305,14 +402,16 @@
                 hideError();
             } catch (error) {
                 console.error('Erreur:', error);
-                showError('Impossible de charger les réservations. Vérifiez votre connexion internet.');
+                showError('Impossible de charger les réservations. Vérifiez la configuration.');
+                
+                // Zeige Konfigurationsfeld bei Fehler
+                document.getElementById('configBox').style.display = 'block';
             }
         }
         
         function filterBookings(filter) {
             currentFilter = filter;
             
-            // Tab-Styling aktualisieren
             document.querySelectorAll('.filter-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
@@ -336,7 +435,6 @@
                 return;
             }
             
-            // Filtern
             let filteredBookings = allBookings;
             if (currentFilter === 'upcoming') {
                 filteredBookings = allBookings.filter(b => b.arrivalDate >= today);
@@ -354,7 +452,6 @@
                 return;
             }
             
-            // Sortieren nach Ankunftsdatum
             filteredBookings.sort((a, b) => new Date(a.arrivalDate) - new Date(b.arrivalDate));
             
             list.innerHTML = filteredBookings.map(booking => {
@@ -367,7 +464,6 @@
                 else if (isPast) cardClass = 'past';
                 else if (isSoon) cardClass = 'upcoming';
                 
-                // Countdown berechnen
                 const daysUntil = Math.ceil((new Date(booking.arrivalDate) - new Date()) / (1000 * 60 * 60 * 24));
                 let countdownText = '';
                 let statusText = '';
@@ -466,38 +562,19 @@
             const errorDiv = document.getElementById('errorMessage');
             errorDiv.textContent = '⚠️ ' + message;
             errorDiv.style.display = 'block';
-            
-            document.getElementById('bookingsList').innerHTML = `
-                <div class="no-bookings">
-                    <div class="no-bookings-icon">⚠️</div>
-                    <h3>Erreur de connexion</h3>
-                    <p>Nouvelle tentative dans 30 secondes...</p>
-                </div>
-            `;
+            setTimeout(() => errorDiv.style.display = 'none', 5000);
+        }
+        
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = '✓ ' + message;
+            successDiv.style.display = 'block';
+            setTimeout(() => successDiv.style.display = 'none', 3000);
         }
         
         function hideError() {
             document.getElementById('errorMessage').style.display = 'none';
         }
-        
-        // Benachrichtigungen (optional - funktioniert nur mit HTTPS)
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-        
-        // Neue Buchungen erkennen
-        let lastBookingCount = 0;
-        setInterval(() => {
-            if (allBookings.length > lastBookingCount && lastBookingCount > 0) {
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification('Nouvelle réservation !', {
-                        body: 'Une nouvelle réservation a été ajoutée.',
-                        icon: '🏠'
-                    });
-                }
-            }
-            lastBookingCount = allBookings.length;
-        }, 30000);
     </script>
 </body>
 </html>

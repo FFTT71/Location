@@ -322,124 +322,153 @@
         }
         
         function displayBookings() {
-            const list = document.getElementById('bookingsList');
-            const today = new Date().toISOString().split('T')[0];
+    const list = document.getElementById('bookingsList');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Uhrzeit auf 00:00 setzen
+    const todayStr = today.toISOString().split('T')[0];
+    
+    if (!allBookings || allBookings.length === 0) {
+        list.innerHTML = `
+            <div class="no-bookings">
+                <div class="no-bookings-icon">✓</div>
+                <h3>Aucune réservation</h3>
+                <p>Aucun nettoyage n'est actuellement requis</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let filteredBookings = allBookings;
+    
+    // Filtern basierend auf Ankunftsdatum
+    if (currentFilter === 'upcoming') {
+        // Zukünftige Buchungen (Ankunft ist heute oder später)
+        filteredBookings = allBookings.filter(b => b.arrivalDate >= todayStr);
+    } else if (currentFilter === 'past') {
+        // Vergangene Buchungen (Ankunft war VOR heute)
+        filteredBookings = allBookings.filter(b => b.arrivalDate < todayStr);
+    }
+    
+    if (filteredBookings.length === 0) {
+        list.innerHTML = `
+            <div class="no-bookings">
+                <div class="no-bookings-icon">📭</div>
+                <h3>Aucune réservation dans cette catégorie</h3>
+            </div>
+        `;
+        return;
+    }
+    
+    filteredBookings.sort((a, b) => new Date(a.arrivalDate) - new Date(b.arrivalDate));
+    
+    list.innerHTML = filteredBookings.map(booking => {
+        const arrivalDate = booking.arrivalDate;
+        
+        // Vergleich: Ist Ankunft heute?
+        const isToday = arrivalDate === todayStr;
+        
+        // Vergleich: Ist Ankunft vor heute?
+        const isPast = arrivalDate < todayStr;
+        
+        // Vergleich: Ist Ankunft in der Zukunft?
+        const isFuture = arrivalDate > todayStr;
+        
+        let cardClass = '';
+        let statusText = '';
+        let countdownText = '';
+        
+        if (isToday) {
+            // HEUTE = BLAU
+            cardClass = 'today';
+            statusText = '🔔 AUJOURD\'HUI';
+            countdownText = '⏰ Aujourd\'hui !';
+        } else if (isPast) {
+            // VOR HEUTE = GRAU (Passé)
+            cardClass = 'past';
+            statusText = '✓ Terminé';
+        } else if (isFuture) {
+            // NACH HEUTE = LILA (À venir)
+            cardClass = 'upcoming';
             
-            if (!allBookings || allBookings.length === 0) {
-                list.innerHTML = `
-                    <div class="no-bookings">
-                        <div class="no-bookings-icon">✓</div>
-                        <h3>Aucune réservation</h3>
-                        <p>Aucun nettoyage n'est actuellement requis</p>
-                    </div>
-                `;
-                return;
+            const daysUntil = Math.ceil((new Date(arrivalDate) - today) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntil === 1) {
+                statusText = '📅 Demain';
+                countdownText = '⏰ Demain !';
+            } else if (daysUntil <= 7) {
+                statusText = '📅 Bientôt';
+                countdownText = `⏰ Dans ${daysUntil} jours`;
+            } else {
+                statusText = '📅 À venir';
+                countdownText = `⏰ Dans ${daysUntil} jours`;
             }
-            
-            // Filtern
-            let filteredBookings = allBookings;
-            if (currentFilter === 'upcoming') {
-                filteredBookings = allBookings.filter(b => b.arrivalDate >= today);
-            } else if (currentFilter === 'past') {
-                filteredBookings = allBookings.filter(b => b.arrivalDate < today);
-            }
-            
-            if (filteredBookings.length === 0) {
-                list.innerHTML = `
-                    <div class="no-bookings">
-                        <div class="no-bookings-icon">📭</div>
-                        <h3>Aucune réservation dans cette catégorie</h3>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Sortieren nach Ankunftsdatum
-            filteredBookings.sort((a, b) => new Date(a.arrivalDate) - new Date(b.arrivalDate));
-            
-            list.innerHTML = filteredBookings.map(booking => {
-                const isToday = booking.arrivalDate === today;
-                const isPast = booking.arrivalDate < today;
-                const isSoon = !isPast && !isToday;
-                
-                let cardClass = '';
-                if (isToday) cardClass = 'today';
-                else if (isPast) cardClass = 'past';
-                else if (isSoon) cardClass = 'upcoming';
-                
-                // Countdown berechnen
-                const daysUntil = Math.ceil((new Date(booking.arrivalDate) - new Date()) / (1000 * 60 * 60 * 24));
-                let countdownText = '';
-                let statusText = '';
-                
-                if (isPast) {
-                    statusText = '✓ Terminé';
-                } else if (isToday) {
-                    countdownText = '⏰ Aujourd\'hui !';
-                    statusText = '🔔 AUJOURD\'HUI';
-                } else if (daysUntil === 1) {
-                    countdownText = '⏰ Demain !';
-                    statusText = '📅 Demain';
-                } else if (daysUntil > 1 && daysUntil <= 7) {
-                    countdownText = `⏰ Dans ${daysUntil} jours`;
-                    statusText = '📅 Bientôt';
-                } else {
-                    countdownText = `⏰ Dans ${daysUntil} jours`;
-                    statusText = '📅 À venir';
-                }
-                
-                return `
-                    <div class="booking-card ${cardClass}">
-                        <div class="booking-header">
-                            <span>${booking.guestName || 'Client'}</span>
-                            <span class="status-badge">${statusText}</span>
-                        </div>
-                        <div class="booking-detail">
-                            <span><strong>Arrivée :</strong></span>
-                            <span>${formatDate(booking.arrivalDate)}</span>
-                        </div>
-                        <div class="booking-detail">
-                            <span><strong>Départ :</strong></span>
-                            <span>${formatDate(booking.departureDate)}</span>
-                        </div>
-                        <div class="booking-detail">
-                            <span><strong>Personnes :</strong></span>
-                            <span>${booking.numPersons}</span>
-                        </div>
-                        <div class="booking-detail">
-                            <span><strong>Nuits :</strong></span>
-                            <span>${booking.numNights}</span>
-                        </div>
-                        ${booking.notes ? `
-                            <div class="booking-detail-full">
-                                <strong>Notes :</strong><br>
-                                ${booking.notes}
-                            </div>
-                        ` : ''}
-                        ${countdownText && !isPast ? `<div class="countdown">${countdownText}</div>` : ''}
-                    </div>
-                `;
-            }).join('');
         }
         
+        return `
+            <div class="booking-card ${cardClass}">
+                <div class="booking-header">
+                    <span>${booking.guestName || 'Client'}</span>
+                    <span class="status-badge">${statusText}</span>
+                </div>
+                <div class="booking-detail">
+                    <span><strong>Arrivée :</strong></span>
+                    <span>${formatDate(booking.arrivalDate)}</span>
+                </div>
+                <div class="booking-detail">
+                    <span><strong>Départ :</strong></span>
+                    <span>${formatDate(booking.departureDate)}</span>
+                </div>
+                <div class="booking-detail">
+                    <span><strong>Personnes :</strong></span>
+                    <span>${booking.numPersons}</span>
+                </div>
+                <div class="booking-detail">
+                    <span><strong>Nuits :</strong></span>
+                    <span>${booking.numNights}</span>
+                </div>
+                ${booking.notes ? `
+                    <div class="booking-detail-full">
+                        <strong>Notes :</strong><br>
+                        ${booking.notes}
+                    </div>
+                ` : ''}
+                ${countdownText ? `<div class="countdown">${countdownText}</div>` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+        
         function updateStats() {
-            const today = new Date().toISOString().split('T')[0];
-            const nextWeek = new Date();
-            nextWeek.setDate(nextWeek.getDate() + 7);
-            const nextWeekStr = nextWeek.toISOString().split('T')[0];
-            
-            let total = 0, todayCount = 0, weekCount = 0;
-            
-            allBookings.forEach(booking => {
-                total++;
-                if (booking.arrivalDate === today) todayCount++;
-                if (booking.arrivalDate >= today && booking.arrivalDate <= nextWeekStr) weekCount++;
-            });
-            
-            document.getElementById('statToday').textContent = todayCount;
-            document.getElementById('statWeek').textContent = weekCount;
-            document.getElementById('statTotal').textContent = total;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0];
+    
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const nextWeekStr = nextWeek.toISOString().split('T')[0];
+    
+    let total = 0, todayCount = 0, weekCount = 0;
+    
+    allBookings.forEach(booking => {
+        total++;
+        
+        // Heute = Ankunftsdatum ist heute
+        if (booking.arrivalDate === todayStr) {
+            todayCount++;
         }
+        
+        // Diese Woche = Ankunft ist heute oder in den nächsten 7 Tagen
+        if (booking.arrivalDate >= todayStr && booking.arrivalDate <= nextWeekStr) {
+            weekCount++;
+        }
+    });
+    
+    document.getElementById('statToday').textContent = todayCount;
+    document.getElementById('statWeek').textContent = weekCount;
+    document.getElementById('statTotal').textContent = total;
+}
+
         
         function updateLastUpdate() {
             const now = new Date();

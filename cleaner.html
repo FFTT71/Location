@@ -321,11 +321,13 @@
             displayBookings();
         }
         
-        function displayBookings() {
+   function displayBookings() {
     const list = document.getElementById('bookingsList');
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Uhrzeit auf 00:00 setzen
-    const todayStr = today.toISOString().split('T')[0];
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    
+    console.log('Today:', todayStr); // Debug
     
     if (!allBookings || allBookings.length === 0) {
         list.innerHTML = `
@@ -338,15 +340,57 @@
         return;
     }
     
+    // Funktion zum Normalisieren des Datums
+    function normalizeDate(dateStr) {
+        if (!dateStr) return null;
+        
+        // Entfernen Sie Wochentag (z.B. "mar. 14/07/2026" -> "14/07/2026")
+        let cleaned = dateStr.replace(/^[a-zéèêà]+\.\s*/i, '').trim();
+        
+        console.log('Cleaning date:', dateStr, '->', cleaned); // Debug
+        
+        // Format: DD/MM/YYYY -> YYYY-MM-DD
+        if (cleaned.includes('/')) {
+            const parts = cleaned.split('/');
+            if (parts.length === 3) {
+                const day = parts[0].trim().padStart(2, '0');
+                const month = parts[1].trim().padStart(2, '0');
+                const year = parts[2].trim();
+                return `${year}-${month}-${day}`;
+            }
+        }
+        
+        // Format: DD.MM.YYYY -> YYYY-MM-DD
+        if (cleaned.includes('.')) {
+            const parts = cleaned.split('.');
+            if (parts.length === 3) {
+                const day = parts[0].trim().padStart(2, '0');
+                const month = parts[1].trim().padStart(2, '0');
+                const year = parts[2].trim();
+                return `${year}-${month}-${day}`;
+            }
+        }
+        
+        // Bereits im Format YYYY-MM-DD
+        if (/^\d{4}-\d{2}-\d{2}$/.test(cleaned)) {
+            return cleaned;
+        }
+        
+        return cleaned;
+    }
+    
     let filteredBookings = allBookings;
     
-    // Filtern basierend auf Ankunftsdatum
     if (currentFilter === 'upcoming') {
-        // Zukünftige Buchungen (Ankunft ist heute oder später)
-        filteredBookings = allBookings.filter(b => b.arrivalDate >= todayStr);
+        filteredBookings = allBookings.filter(b => {
+            const normalized = normalizeDate(b.arrivalDate);
+            return normalized >= todayStr;
+        });
     } else if (currentFilter === 'past') {
-        // Vergangene Buchungen (Ankunft war VOR heute)
-        filteredBookings = allBookings.filter(b => b.arrivalDate < todayStr);
+        filteredBookings = allBookings.filter(b => {
+            const normalized = normalizeDate(b.arrivalDate);
+            return normalized < todayStr;
+        });
     }
     
     if (filteredBookings.length === 0) {
@@ -359,38 +403,37 @@
         return;
     }
     
-    filteredBookings.sort((a, b) => new Date(a.arrivalDate) - new Date(b.arrivalDate));
+    filteredBookings.sort((a, b) => {
+        const dateA = normalizeDate(a.arrivalDate);
+        const dateB = normalizeDate(b.arrivalDate);
+        return dateA.localeCompare(dateB);
+    });
     
     list.innerHTML = filteredBookings.map(booking => {
-        const arrivalDate = booking.arrivalDate;
+        const normalizedArrival = normalizeDate(booking.arrivalDate);
         
-        // Vergleich: Ist Ankunft heute?
-        const isToday = arrivalDate === todayStr;
+        console.log('Booking:', booking.guestName, 'Arrival:', booking.arrivalDate, 'Normalized:', normalizedArrival, 'Today:', todayStr); // Debug
         
-        // Vergleich: Ist Ankunft vor heute?
-        const isPast = arrivalDate < todayStr;
-        
-        // Vergleich: Ist Ankunft in der Zukunft?
-        const isFuture = arrivalDate > todayStr;
+        const isToday = normalizedArrival === todayStr;
+        const isPast = normalizedArrival < todayStr;
+        const isFuture = normalizedArrival > todayStr;
         
         let cardClass = '';
         let statusText = '';
         let countdownText = '';
         
         if (isToday) {
-            // HEUTE = BLAU
             cardClass = 'today';
             statusText = '🔔 AUJOURD\'HUI';
             countdownText = '⏰ Aujourd\'hui !';
         } else if (isPast) {
-            // VOR HEUTE = GRAU (Passé)
             cardClass = 'past';
             statusText = '✓ Terminé';
         } else if (isFuture) {
-            // NACH HEUTE = LILA (À venir)
             cardClass = 'upcoming';
             
-            const daysUntil = Math.ceil((new Date(arrivalDate) - today) / (1000 * 60 * 60 * 24));
+            const arrivalDate = new Date(normalizedArrival);
+            const daysUntil = Math.ceil((arrivalDate - today) / (1000 * 60 * 60 * 24));
             
             if (daysUntil === 1) {
                 statusText = '📅 Demain';
@@ -412,11 +455,11 @@
                 </div>
                 <div class="booking-detail">
                     <span><strong>Arrivée :</strong></span>
-                    <span>${formatDate(booking.arrivalDate)}</span>
+                    <span>${booking.arrivalDate}</span>
                 </div>
                 <div class="booking-detail">
                     <span><strong>Départ :</strong></span>
-                    <span>${formatDate(booking.departureDate)}</span>
+                    <span>${booking.departureDate}</span>
                 </div>
                 <div class="booking-detail">
                     <span><strong>Personnes :</strong></span>
@@ -424,7 +467,7 @@
                 </div>
                 <div class="booking-detail">
                     <span><strong>Nuits :</strong></span>
-                    <span>${booking.numNights}</span>
+                    <span>${booking.numNuits || booking.numNights || 'N/A'}</span>
                 </div>
                 ${booking.notes ? `
                     <div class="booking-detail-full">
@@ -448,18 +491,48 @@
     nextWeek.setDate(nextWeek.getDate() + 7);
     const nextWeekStr = nextWeek.toISOString().split('T')[0];
     
+    function normalizeDate(dateStr) {
+        if (!dateStr) return null;
+        let cleaned = dateStr.replace(/^[a-zéèêà]+\.\s*/i, '').trim();
+        
+        if (cleaned.includes('/')) {
+            const parts = cleaned.split('/');
+            if (parts.length === 3) {
+                const day = parts[0].trim().padStart(2, '0');
+                const month = parts[1].trim().padStart(2, '0');
+                const year = parts[2].trim();
+                return `${year}-${month}-${day}`;
+            }
+        }
+        
+        if (cleaned.includes('.')) {
+            const parts = cleaned.split('.');
+            if (parts.length === 3) {
+                const day = parts[0].trim().padStart(2, '0');
+                const month = parts[1].trim().padStart(2, '0');
+                const year = parts[2].trim();
+                return `${year}-${month}-${day}`;
+            }
+        }
+        
+        if (/^\d{4}-\d{2}-\d{2}$/.test(cleaned)) {
+            return cleaned;
+        }
+        
+        return cleaned;
+    }
+    
     let total = 0, todayCount = 0, weekCount = 0;
     
     allBookings.forEach(booking => {
         total++;
+        const normalized = normalizeDate(booking.arrivalDate);
         
-        // Heute = Ankunftsdatum ist heute
-        if (booking.arrivalDate === todayStr) {
+        if (normalized === todayStr) {
             todayCount++;
         }
         
-        // Diese Woche = Ankunft ist heute oder in den nächsten 7 Tagen
-        if (booking.arrivalDate >= todayStr && booking.arrivalDate <= nextWeekStr) {
+        if (normalized >= todayStr && normalized <= nextWeekStr) {
             weekCount++;
         }
     });
